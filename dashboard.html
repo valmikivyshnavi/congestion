@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Smart Traffic Dashboard</title>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:Arial,Helvetica,sans-serif;
+}
+
+body{
+    background:#0f172a;
+    color:white;
+}
+
+header{
+    background:#1e3a8a;
+    padding:20px;
+    text-align:center;
+    font-size:30px;
+    font-weight:bold;
+    box-shadow:0 2px 10px rgba(0,0,0,.4);
+}
+
+.container{
+    width:95%;
+    margin:auto;
+    padding:20px;
+}
+
+.grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+    gap:20px;
+}
+
+.card{
+    background:#1e293b;
+    border-radius:12px;
+    padding:20px;
+    text-align:center;
+    box-shadow:0 0 15px rgba(0,0,0,.4);
+}
+
+.card h3{
+    color:#38bdf8;
+    margin-bottom:10px;
+}
+
+.stat{
+    font-size:32px;
+    color:#22c55e;
+    font-weight:bold;
+}
+
+.predictBox{
+    margin-top:30px;
+    background:#1e293b;
+    border-radius:12px;
+    padding:20px;
+}
+
+.predictBox h2{
+    margin-bottom:20px;
+}
+
+input{
+    width:180px;
+    padding:10px;
+    border:none;
+    border-radius:6px;
+    margin:10px;
+    text-align:center;
+}
+
+button{
+    padding:10px 20px;
+    border:none;
+    border-radius:6px;
+    background:#0ea5e9;
+    color:white;
+    cursor:pointer;
+    font-size:16px;
+}
+
+button:hover{
+    background:#0284c7;
+}
+
+#result{
+    margin-top:20px;
+    font-size:22px;
+    font-weight:bold;
+}
+
+canvas{
+    margin-top:30px;
+    background:white;
+    border-radius:10px;
+    padding:10px;
+}
+
+.actions{
+    margin-top:30px;
+    display:flex;
+    gap:15px;
+    justify-content:center;
+    flex-wrap:wrap;
+}
+
+.logout{
+    background:#dc2626;
+}
+
+.logout:hover{
+    background:#b91c1c;
+}
+
+.analytics{
+    background:#16a34a;
+}
+
+.analytics:hover{
+    background:#15803d;
+}
+
+.road{
+    margin-top:30px;
+    height:80px;
+    background:#111827;
+    border-radius:10px;
+    overflow:hidden;
+    position:relative;
+}
+
+.car{
+    width:50px;
+    height:25px;
+    background:#38bdf8;
+    position:absolute;
+    top:28px;
+    border-radius:5px;
+    animation:move 5s linear infinite;
+}
+
+@keyframes move{
+
+from{
+left:-60px;
+}
+
+to{
+left:100%;
+}
+
+}
+
+</style>
+
+</head>
+
+<body>
+
+<header>
+🚦 SMART TRAFFIC MONITORING DASHBOARD
+</header>
+
+<div class="container">
+
+<div class="grid">
+
+<div class="card">
+<h3>Total Vehicles</h3>
+<div class="stat" id="vehicles">425</div>
+</div>
+
+<div class="card">
+<h3>Traffic Density</h3>
+<div class="stat" id="density">High</div>
+</div>
+
+<div class="card">
+<h3>Average Speed</h3>
+<div class="stat" id="speed">48 km/h</div>
+</div>
+
+<div class="card">
+<h3>Signal Status</h3>
+<div class="stat" id="signal">GREEN</div>
+</div>
+
+</div>
+
+<div class="predictBox">
+
+<h2>AI Traffic Prediction</h2>
+
+<input type="number" id="hour" placeholder="Hour (0-23)">
+
+<input type="number" id="vehicleCount" placeholder="Vehicle Count">
+
+<button onclick="predictTraffic()">
+Predict
+</button>
+
+<div id="result"></div>
+
+</div>
+
+<div class="road">
+<div class="car"></div>
+</div>
+
+<canvas id="trafficChart"></canvas>
+
+<div class="actions">
+
+<button class="analytics"
+onclick="window.location.href='traffic_hour_graph.html'">
+
+📈 View Analytics
+
+</button>
+
+<button class="logout"
+onclick="logout()">
+
+Logout
+
+</button>
+
+</div>
+
+</div>
+<script>
+
+// Live Dashboard Values
+function updateStats(){
+
+    document.getElementById("vehicles").innerHTML =
+    Math.floor(Math.random()*300+250);
+
+    let speed=Math.floor(Math.random()*40+30);
+
+    document.getElementById("speed").innerHTML=
+    speed+" km/h";
+
+    let density=document.getElementById("density");
+    let signal=document.getElementById("signal");
+
+    if(speed<35){
+
+        density.innerHTML="High";
+        density.style.color="red";
+
+        signal.innerHTML="RED";
+        signal.style.color="red";
+
+    }
+
+    else if(speed<55){
+
+        density.innerHTML="Medium";
+        density.style.color="orange";
+
+        signal.innerHTML="YELLOW";
+        signal.style.color="yellow";
+
+    }
+
+    else{
+
+        density.innerHTML="Low";
+        density.style.color="lime";
+
+        signal.innerHTML="GREEN";
+        signal.style.color="lime";
+
+    }
+
+}
+
+setInterval(updateStats,3000);
+updateStats();
+
+
+// AI Prediction
+
+function predictTraffic(){
+
+let hour=parseInt(document.getElementById("hour").value);
+
+let vehicles=parseInt(document.getElementById("vehicleCount").value);
+
+if(isNaN(hour)||isNaN(vehicles)){
+
+document.getElementById("result").innerHTML=
+"Enter Hour and Vehicle Count";
+
+return;
+
+}
+
+let result="";
+
+if((hour>=7&&hour<=10)||(hour>=17&&hour<=21)){
+
+if(vehicles>300){
+
+result="🔴 HIGH TRAFFIC";
+
+}
+
+else{
+
+result="🟡 MEDIUM TRAFFIC";
+
+}
+
+}
+
+else{
+
+if(vehicles>250){
+
+result="🟡 MEDIUM TRAFFIC";
+
+}
+
+else{
+
+result="🟢 LOW TRAFFIC";
+
+}
+
+}
+
+document.getElementById("result").innerHTML=result;
+
+}
+
+
+
+// Chart
+
+const ctx=document.getElementById("trafficChart");
+
+let values=[
+120,
+180,
+250,
+220,
+350,
+450,
+500
+];
+
+const trafficChart=new Chart(ctx,{
+
+type:"bar",
+
+data:{
+
+labels:[
+"Mon",
+"Tue",
+"Wed",
+"Thu",
+"Fri",
+"Sat",
+"Sun"
+],
+
+datasets:[{
+
+label:"Vehicles",
+
+data:values,
+
+borderWidth:1
+
+}]
+
+},
+
+options:{
+
+responsive:true,
+
+plugins:{
+
+legend:{
+
+display:true
+
+}
+
+}
+
+}
+
+});
+
+function updateChart(){
+
+values=values.map(v=>v+Math.floor(Math.random()*60-30));
+
+trafficChart.data.datasets[0].data=values;
+
+trafficChart.update();
+
+}
+
+setInterval(updateChart,4000);
+function logout(){
+
+    localStorage.removeItem("username");
+    localStorage.removeItem("email");
+    localStorage.removeItem("password");
+
+    alert("Logged out successfully!");
+
+    window.location.href="login.html";
+
+}
+
+// Run updates immediately
+updateStats();
+
+</script>
+
+</body>
+</html>
